@@ -3,13 +3,14 @@ const axios = require('axios');
 const { INSTANCE } = require('../invidious');
 
 async function getChannelInfo(channelId) {
+    // Invidious API 経由での取得を試行
     for (let url of INSTANCE) {
         try {
             const baseUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+            // APIエンドポイントに /api/v1/ を明示的に追加
             const res = await axios.get(`${baseUrl}/api/v1/channels/${channelId}`, { timeout: 4000 });
             if (res.data) {
                 const c = res.data;
-                // インスタンスによって動画リストのキーが異なる場合に対応
                 const rawVideos = c.latestVideos || c.videos || [];
                 return {
                     name: c.author || "Unknown Channel",
@@ -31,29 +32,35 @@ async function getChannelInfo(channelId) {
         }
     }
 
+    // フォールバック: YouTube.js (youtubei.js)
     try {
         const yt = await getYouTube();
         const channel = await yt.getChannel(channelId);
+
+        // 参考元の構造に基づいたメタデータ抽出
+        const metadata = channel.metadata ?? {};
+        const header = channel.header ?? {};
         
-        // YouTube.jsの最新のデータ構造に合わせて抽出
-        const videosData = channel.videos || [];
+        // 動画タブから動画一覧を取得
+        const videos_tab = await channel.getVideos();
+        const videosData = videos_tab.videos ?? [];
         
         return {
-            name: channel.metadata.title || "Unknown Channel",
-            thumbnail: channel.metadata.thumbnail?.[0]?.url || "",
-            subscribers: channel.header?.subscribers?.toString() || "0",
-            banner: channel.header?.banner?.thumbnails?.[0]?.url || "",
+            name: metadata.title ?? "Unknown Channel",
+            thumbnail: metadata.avatar?.[0]?.url ?? "",
+            subscribers: header.subscribers?.toString() ?? "0",
+            banner: header.banner?.[0]?.url ?? "",
             videos: videosData.map(v => ({
-                videoId: v.id || v.videoId,
-                title: v.title?.toString() || "",
-                videoThumbnails: [{ url: v.thumbnail?.[0]?.url || `https://i.ytimg.com/vi/${v.id}/mqdefault.jpg` }],
-                viewCountText: v.view_count?.toString() || v.short_view_count?.toString() || "",
-                publishedText: v.published?.toString() || ""
+                videoId: v.id ?? v.video_id ?? "",
+                title: v.title?.text ?? v.title?.toString() ?? "",
+                videoThumbnails: [{ url: v.thumbnails?.[0]?.url ?? `https://i.ytimg.com/vi/${v.id || v.video_id}/mqdefault.jpg` }],
+                viewCountText: v.short_view_count?.text ?? v.view_count?.toString() ?? "",
+                publishedText: v.published?.text ?? v.published?.toString() ?? ""
             })),
             comments: [] 
         };
     } catch (e) {
-        console.error(e);
+        console.error("Channel Fetch Error:", e);
         return null;
     }
 }
