@@ -547,7 +547,7 @@
             return row;
         }
 
-        // 高画質ON/OFFトグル切り替え時の処理
+        // 高画質ON/OFFトグル切り替え時の処理（1080p webm -> 720p webm -> 最高画質webm の順で厳密に検索）
         function toggleHighQualityStream() {
             if (!globalAllStreams) {
                 showError("ストリーム情報がまだロードされていません。");
@@ -570,12 +570,36 @@
             let targetAudioUrl = null;
 
             if (isHD) {
-                // adaptiveFormats から最高画質の映像(video/)ストリームを抽出
+                // adaptiveFormats から映像(video/)のみのストリームを抽出
                 const videoOnlyStreams = globalAllStreams.adaptiveFormats.filter(s => s.type && s.type.startsWith('video/'));
-                if (videoOnlyStreams.length > 0) {
-                    // 解像度やfpsなどから適した最高画質を選択
-                    targetVideoUrl = videoOnlyStreams[0].url;
+                
+                // WebMコンテナのストリームだけを抽出
+                const webmStreams = videoOnlyStreams.filter(s => (s.container && s.container.toLowerCase() === 'webm') || (s.type && s.type.includes('webm')));
+
+                let selectedStream = null;
+
+                if (webmStreams.length > 0) {
+                    // 1. 1080p の webm を探索
+                    selectedStream = webmStreams.find(s => s.qualityLabel === '1080p' || s.resolution === '1080p' || (s.qualityLabel && s.qualityLabel.startsWith('1080p')));
+                    
+                    // 2. 1080p がなければ 720p の webm を探索
+                    if (!selectedStream) {
+                        selectedStream = webmStreams.find(s => s.qualityLabel === '720p' || s.resolution === '720p' || (s.qualityLabel && s.qualityLabel.startsWith('720p')));
+                    }
+                    
+                    // 3. どちらもなければ、存在するwebmストリームの中から最も高解像度なものを選択
+                    if (!selectedStream) {
+                        selectedStream = webmStreams[0];
+                    }
+                } else if (videoOnlyStreams.length > 0) {
+                    // webmが一切見つからない場合のフォールバック対応（通常の最高画質）
+                    selectedStream = videoOnlyStreams[0];
                 }
+
+                if (selectedStream) {
+                    targetVideoUrl = selectedStream.url;
+                }
+
                 // 同期再生に必要なオーディオ(audio/)ストリームも抽出して設定
                 const audioOnlyStreams = globalAllStreams.adaptiveFormats.filter(s => s.type && s.type.startsWith('audio/'));
                 if (audioOnlyStreams.length > 0) {
