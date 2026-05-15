@@ -40,4 +40,20 @@ async function searchInvidious(query) {
     return await fetchInvidious(`/search?q=${encodeURIComponent(query)}`);
 }
 
-module.exports = { getTrending, searchInvidious, INSTANCE };
+// 全ストリーム・画質フォーマット情報を取得する関数を追加
+async function getVideoInfo(videoId) {
+    for (let url of INSTANCE) {
+        try {
+            const baseUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+            const res = await axios.get(`${baseUrl}/videos/${videoId}`, { timeout: 5000 });
+            if (res.data) {
+                return res.data;
+            }
+        } catch (e) {
+            continue;
+        }
+    }
+    return null;
+}
+
+module.exports = { getTrending, searchInvidious, getVideoInfo, INSTANCE };
