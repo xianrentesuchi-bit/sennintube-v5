@@ -45,7 +45,6 @@ async function searchInvidious(query) {
     return await fetchInvidious(`/search?q=${encodeURIComponent(query)}`);
 }
 
-// 全ストリーム・画質フォーマット情報を取得する関数を追加
 async function getVideoInfo(videoId) {
     const promises = INSTANCE.map(async (url) => {
         try {
