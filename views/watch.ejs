@@ -121,6 +121,11 @@
                                 <span class="material-symbols-outlined text-base">share</span>
                                 共有
                             </button>
+                            <!-- ダウンロードボタンの追加 -->
+                            <button onclick="openDownloadModal()" class="bg-[#272727] px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 hover:bg-[#3f3f3f] transition">
+                                <span class="material-symbols-outlined text-base">download</span>
+                                ダウンロード
+                            </button>
                         </div>
                     </div>
 
@@ -157,6 +162,11 @@
             </div>
         </div>
         <div class="w-full md:w-80 lg:w-96 flex-shrink-0">
+            <!-- コントロールボタンを追加 -->
+            <button onclick="toggleControlTab()" class="w-full bg-[#808080] text-white py-3 rounded-xl font-bold mb-4 hover:bg-gray-500 transition flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">settings</span>
+                コントロール
+            </button>
             <h3 class="font-bold mb-4">関連動画</h3>
             <% if (typeof related !== 'undefined' && related.length > 0) { %>
                 <% related.forEach(rv => { %>
@@ -174,12 +184,102 @@
         </div>
     </main>
 
+    <!-- 全画質全フォーマットダウンロード用ウィンドウモーダル -->
+    <div id="downloadModal" class="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 hidden">
+        <div class="bg-[#272727] p-6 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 border border-gray-700 max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold">全画質・全フォーマット一覧</h2>
+                <button onclick="closeDownloadModal()" class="material-symbols-outlined text-gray-400 hover:text-white">close</button>
+            </div>
+            <div id="downloadList" class="overflow-y-auto flex-1 pr-2 space-y-3">
+                <p class="text-gray-400 text-sm text-center py-4">ストリーム情報を読み込み中...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右下動画設定コントロールタブ -->
+    <div id="controlTab" class="fixed bottom-4 right-4 z-[120] bg-[#1f1f1f] border border-gray-700 rounded-2xl shadow-2xl w-80 overflow-hidden hidden">
+        <div class="bg-[#272727] px-4 py-3 border-b border-gray-700 flex justify-between items-center">
+            <span class="font-bold text-sm flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">tune</span>動画設定タブ
+            </span>
+            <button onclick="toggleControlTab()" class="material-symbols-outlined text-sm text-gray-400 hover:text-white">close</button>
+        </div>
+        
+        <!-- タブナビゲーション -->
+        <div class="flex border-b border-gray-700 text-xs bg-[#181818]">
+            <button id="tabBtn-media" onclick="switchControlSubTab('media')" class="flex-1 py-2 text-center border-b-2 border-blue-500 text-blue-400 font-bold">画質/音声</button>
+            <button id="tabBtn-other" onclick="switchControlSubTab('other')" class="flex-1 py-2 text-center border-b-2 border-transparent text-gray-400 hover:text-white">その他</button>
+            <button id="tabBtn-type" onclick="switchControlSubTab('type')" class="flex-1 py-2 text-center border-b-2 border-transparent text-gray-400 hover:text-white">再生形式</button>
+        </div>
+
+        <!-- タブコンテンツ領域 -->
+        <div class="p-4 max-h-64 overflow-y-auto space-y-4">
+            <!-- 画質/音声タブ -->
+            <div id="subTab-media" class="space-y-3">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1 font-bold">画質選択</label>
+                    <select id="ctrl-video-select" onchange="changeCustomStream()" class="w-full bg-[#2d2d2d] border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+                        <option value="">標準ストリーム</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1 font-bold">音声の種類選択</label>
+                    <select id="ctrl-audio-select" onchange="changeCustomStream()" class="w-full bg-[#2d2d2d] border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+                        <option value="">デフォルト音声</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- その他タブ -->
+            <div id="subTab-other" class="space-y-3 hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold">ループ再生</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="ctrl-loop" onchange="updatePlaybackOptions()" class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold">ミュート</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="ctrl-mute" onchange="updatePlaybackOptions()" class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 再生形式タブ -->
+            <div id="subTab-type" class="space-y-2 hidden">
+                <label class="block text-xs text-gray-400 mb-2 font-bold">再生形式の選択</label>
+                <div class="space-y-1.5">
+                    <label class="flex items-center gap-2 text-xs cursor-pointer p-1.5 rounded hover:bg-[#272727]">
+                        <input type="radio" name="ctrl-method-radio" value="nocookie" onchange="selectControlMethod('nocookie')">
+                        <span>標準 (NoCookie)</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-xs cursor-pointer p-1.5 rounded hover:bg-[#272727]">
+                        <input type="radio" name="ctrl-method-radio" value="education" onchange="selectControlMethod('education')">
+                        <span>edu</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-xs cursor-pointer p-1.5 rounded hover:bg-[#272727]">
+                        <input type="radio" name="ctrl-method-radio" value="stream" onchange="selectControlMethod('stream')">
+                        <span>ストリーム再生</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const videoId = "<%= videoId %>";
         const streamUrl = "<%= streamUrl %>";
         const container = document.getElementById('playerContainer');
         const overlay = document.getElementById('methodOverlay');
         const skeleton = document.getElementById('playerSkeleton');
+
+        // ストリームの全情報を保持する内部変数
+        let globalAllStreams = null;
+        let activeAudioElement = null; // 別音声同期再生用
 
         function showError(msg) {
             const alert = document.getElementById('errorAlert');
@@ -251,10 +351,17 @@
             localStorage.setItem('sennin_play_method', method);
             localStorage.setItem('sennin_method_expiry', expiry);
             overlay.classList.add('hidden');
+            syncMethodRadioButtons(method);
             initPlayer(method);
         }
 
         async function initPlayer(methodOverride) {
+            // 同期中の既存音声を破棄
+            if (activeAudioElement) {
+                activeAudioElement.pause();
+                activeAudioElement = null;
+            }
+
             const savedMethod = localStorage.getItem('sennin_play_method');
             const expiry = localStorage.getItem('sennin_method_expiry');
             const currentMethod = methodOverride || savedMethod;
@@ -265,9 +372,12 @@
                 return;
             }
 
+            syncMethodRadioButtons(currentMethod);
+
             try {
                 if (currentMethod === 'stream' && streamUrl && streamUrl !== 'null') {
-                    container.innerHTML = `<video src="${streamUrl}" controls autoplay class="w-full h-full" onloadeddata="document.getElementById('playerSkeleton').style.display='none'"></video>`;
+                    container.innerHTML = `<video id="mainVideoPlayer" src="${streamUrl}" controls autoplay class="w-full h-full" onloadeddata="document.getElementById('playerSkeleton').style.display='none'"></video>`;
+                    applyPlaybackOptionsImmediate();
                 } else if (currentMethod === 'education') {
                     const res = await fetch(`/api/youtube/edu?v=${videoId}`);
                     if (!res.ok) throw new Error('動画の取得に失敗しました');
@@ -281,6 +391,289 @@
                 showError('動画の再生中にエラーが発生しました。別の再生方法を試してください。');
                 container.innerHTML = `<div class="w-full h-full flex items-center justify-center text-gray-500 px-4 text-center">再生エラーが発生しました。<br>設定から再生方法を変更してください。</div>`;
             }
+
+            // 非同期でストリーム全情報（ダウンロード/画質セレクト用）をロード
+            loadAllStreamData();
+        }
+
+        // ダウンロードモーダルの制御
+        function openDownloadModal() {
+            document.getElementById('downloadModal').classList.remove('hidden');
+            if (!globalAllStreams) {
+                loadAllStreamData();
+            }
+        }
+
+        function closeDownloadModal() {
+            document.getElementById('downloadModal').classList.add('hidden');
+        }
+
+        // コントロールタブの表示切り替え
+        function toggleControlTab() {
+            const tab = document.getElementById('controlTab');
+            tab.classList.toggle('hidden');
+        }
+
+        // コントロール内のサブタブ切り替え
+        function switchControlSubTab(tabName) {
+            ['media', 'other', 'type'].forEach(t => {
+                document.getElementById(`subTab-${t}`).classList.add('hidden');
+                document.getElementById(`tabBtn-${t}`).classList.remove('border-blue-500', 'text-blue-400');
+                document.getElementById(`tabBtn-${t}`).classList.add('border-transparent', 'text-gray-400');
+            });
+            document.getElementById(`subTab-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tabBtn-${tabName}`).classList.add('border-blue-500', 'text-blue-400');
+            document.getElementById(`tabBtn-${tabName}`).classList.remove('border-transparent', 'text-gray-400');
+        }
+
+        // コントロールタブ側での再生形式変更
+        function selectControlMethod(method) {
+            setMethod(method);
+        }
+
+        function syncMethodRadioButtons(method) {
+            const radios = document.getElementsByName('ctrl-method-radio');
+            radios.forEach(r => {
+                if (r.value === method) r.checked = true;
+            });
+        }
+
+        // 全ストリーム情報をAPI経由で取得し、UIへマッピング
+        async function loadAllStreamData() {
+            try {
+                const res = await fetch(`/api/video/all-streams?v=${videoId}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                globalAllStreams = data;
+                
+                renderDownloadList(data);
+                renderControlSelectors(data);
+            } catch (e) {
+                console.error("ストリーム情報の取得に失敗しました", e);
+            }
+        }
+
+        // モーダル内に全画質全フォーマットをレンダリング
+        function renderDownloadList(data) {
+            const listContainer = document.getElementById('downloadList');
+            listContainer.innerHTML = '';
+
+            if ((!data.formatStreams || data.formatStreams.length === 0) && 
+                (!data.adaptiveFormats || data.adaptiveFormats.length === 0)) {
+                listContainer.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">ダウンロード可能なフォーマットが見つかりませんでした。</p>';
+                return;
+            }
+
+            // 1. 通常ストリーム (映像+音声)
+            if (data.formatStreams && data.formatStreams.length > 0) {
+                const h = document.createElement('h4');
+                h.className = "text-xs font-bold text-blue-400 mt-2 mb-1";
+                h.innerText = "標準フォーマット (映像+音声一体型)";
+                listContainer.appendChild(h);
+
+                data.formatStreams.forEach((s, idx) => {
+                    listContainer.appendChild(createDownloadRow(s, `標準 [${s.resolution || s.qualityLabel || '不明'}] - ${s.container || 'mp4'}`));
+                });
+            }
+
+            // 2. Adaptive ストリーム (Video Only / Audio Only)
+            if (data.adaptiveFormats && data.adaptiveFormats.length > 0) {
+                const videoOnly = data.adaptiveFormats.filter(s => s.type && s.type.startsWith('video/'));
+                const audioOnly = data.adaptiveFormats.filter(s => s.type && s.type.startsWith('audio/'));
+
+                if (videoOnly.length > 0) {
+                    const h = document.createElement('h4');
+                    h.className = "text-xs font-bold text-yellow-400 mt-4 mb-1";
+                    h.innerText = "高画質フォーマット (映像のみ - Video Only)";
+                    listContainer.appendChild(h);
+
+                    videoOnly.forEach((s, idx) => {
+                        listContainer.appendChild(createDownloadRow(s, `映像 [${s.resolution || s.qualityLabel || '不明'}] - ${s.container || 'mp4'} (${s.fps || 30}fps)`));
+                    });
+                }
+
+                if (audioOnly.length > 0) {
+                    const h = document.createElement('h4');
+                    h.className = "text-xs font-bold text-green-400 mt-4 mb-1";
+                    h.innerText = "音声フォーfancyカット (音声のみ - Audio Only)";
+                    listContainer.appendChild(h);
+
+                    audioOnly.forEach((s, idx) => {
+                        listContainer.appendChild(createDownloadRow(s, `音声 [${s.audioBitrate || '不明'}kbps] - ${s.container || 'm4a'} (${s.audioQuality || ''})`));
+                    });
+                }
+            }
+        }
+
+        function createDownloadRow(stream, label) {
+            const row = document.createElement('div');
+            row.className = "flex items-center justify-between bg-[#1f1f1f] p-3 rounded-xl border border-gray-800 text-xs hover:border-gray-700 transition";
+            
+            const info = document.createElement('div');
+            info.className = "flex flex-col gap-0.5";
+            const titleSpan = document.createElement('span');
+            titleSpan.className = "font-bold";
+            titleSpan.innerText = label;
+            info.appendChild(titleSpan);
+
+            if (stream.size || stream.fileSize) {
+                const sizeSpan = document.createElement('span');
+                sizeSpan.className = "text-[10px] text-gray-500";
+                sizeSpan.innerText = `サイズ: ${stream.size || stream.fileSize}`;
+                info.appendChild(sizeSpan);
+            }
+
+            const btn = document.createElement('a');
+            btn.href = stream.url;
+            btn.target = "_blank";
+            btn.download = "";
+            btn.className = "bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1 flex-shrink-0";
+            btn.innerHTML = '<span class="material-symbols-outlined text-sm">download</span>リンクを開く';
+
+            row.appendChild(info);
+            row.appendChild(btn);
+            return row;
+        }
+
+        // コントロールタブのセレクトボックスオプション生成
+        function renderControlSelectors(data) {
+            const vSelect = document.getElementById('ctrl-video-select');
+            const aSelect = document.getElementById('ctrl-audio-select');
+
+            // 初期化保持
+            vSelect.innerHTML = '<option value="">標準ストリーム</option>';
+            aSelect.innerHTML = '<option value="">デフォルト音声</option>';
+
+            if (data.formatStreams) {
+                data.formatStreams.forEach((s, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = `format_${i}`;
+                    opt.innerText = `標準: ${s.resolution || s.qualityLabel || '不明'} (${s.container || 'mp4'})`;
+                    vSelect.appendChild(opt);
+                });
+            }
+
+            if (data.adaptiveFormats) {
+                const videoOnly = data.adaptiveFormats.filter(s => s.type && s.type.startsWith('video/'));
+                const audioOnly = data.adaptiveFormats.filter(s => s.type && s.type.startsWith('audio/'));
+
+                videoOnly.forEach((s, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = `adaptive_video_${i}`;
+                    opt.innerText = `映像のみ: ${s.resolution || s.qualityLabel || '不明'} (${s.fps}fps / ${s.container || 'mp4'})`;
+                    vSelect.appendChild(opt);
+                });
+
+                audioOnly.forEach((s, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = `adaptive_audio_${i}`;
+                    opt.innerText = `音声のみ: ${s.audioBitrate || '不明'}kbps (${s.container || 'm4a'})`;
+                    aSelect.appendChild(opt);
+                });
+            }
+        }
+
+        // セレクト変更時のストリーム再読み込み & 音声同期
+        function changeCustomStream() {
+            if (!globalAllStreams) return;
+
+            const savedMethod = localStorage.getItem('sennin_play_method');
+            if (savedMethod !== 'stream') {
+                // 自動的に再生形式をストリームに切り替える
+                localStorage.setItem('sennin_play_method', 'stream');
+                syncMethodRadioButtons('stream');
+            }
+
+            if (activeAudioElement) {
+                activeAudioElement.pause();
+                activeAudioElement = null;
+            }
+
+            const vVal = document.getElementById('ctrl-video-select').value;
+            const aVal = document.getElementById('ctrl-audio-select').value;
+
+            let targetVideoUrl = streamUrl;
+            let targetAudioUrl = null;
+            let isVideoOnly = false;
+
+            // 選択された映像ストリームのURL決定
+            if (vVal.startsWith('format_')) {
+                const idx = parseInt(vVal.split('_')[1]);
+                targetVideoUrl = globalAllStreams.formatStreams[idx].url;
+            } else if (vVal.startsWith('adaptive_video_')) {
+                const videoOnly = globalAllStreams.adaptiveFormats.filter(s => s.type && s.type.startsWith('video/'));
+                const idx = parseInt(vVal.split('_')[2]);
+                targetVideoUrl = videoOnly[idx].url;
+                isVideoOnly = true;
+            }
+
+            // 選択された音声ストリームのURL決定
+            if (aVal.startsWith('adaptive_audio_')) {
+                const audioOnly = globalAllStreams.adaptiveFormats.filter(s => s.type && s.type.startsWith('audio/'));
+                const idx = parseInt(aVal.split('_')[2]);
+                targetAudioUrl = audioOnly[idx].url;
+            } else if (isVideoOnly) {
+                // videoOnlyだが、音声選択がない場合は、一番上の高品質な音声を自動アタッチ
+                const audioOnly = globalAllStreams.adaptiveFormats.filter(s => s.type && s.type.startsWith('audio/'));
+                if (audioOnly.length > 0) {
+                    targetAudioUrl = audioOnly[0].url;
+                }
+            }
+
+            // プレイヤーをストリームで再構築
+            container.innerHTML = `<video id="mainVideoPlayer" src="${targetVideoUrl}" controls autoplay class="w-full h-full" onloadeddata="document.getElementById('playerSkeleton').style.display='none'"></video>`;
+            const videoEl = document.getElementById('mainVideoPlayer');
+
+            // 音声の同期再生制御
+            if (targetAudioUrl) {
+                activeAudioElement = new Audio(targetAudioUrl);
+                const audioEl = activeAudioElement;
+
+                // ビデオ側の状態変化をオーディオへ同期
+                videoEl.addEventListener('play', () => audioEl.play());
+                videoEl.addEventListener('pause', () => audioEl.pause());
+                videoEl.addEventListener('seeking', () => { audioEl.currentTime = videoEl.currentTime; });
+                videoEl.addEventListener('seeked', () => { audioEl.currentTime = videoEl.currentTime; });
+                videoEl.addEventListener('ratechange', () => { audioEl.playbackRate = videoEl.playbackRate; });
+
+                // videoOnlyの場合はビデオ自体の音量を0にし、オーディオエレメント側の音量で鳴らす
+                videoEl.muted = true;
+                
+                // 初回再生タイミング同期
+                audioEl.currentTime = videoEl.currentTime;
+                if (!videoEl.paused) {
+                    audioEl.play().catch(() => {});
+                }
+            }
+
+            applyPlaybackOptionsImmediate();
+        }
+
+        // その他タブ（ループ、ミュート）の状態を即反映
+        function updatePlaybackOptions() {
+            const videoEl = document.getElementById('mainVideoPlayer');
+            const isLoop = document.getElementById('ctrl-loop').checked;
+            const isMute = document.getElementById('ctrl-mute').checked;
+
+            if (videoEl) {
+                videoEl.loop = isLoop;
+                if (activeAudioElement) {
+                    // 別音声同期時：ビデオは常に無音のまま、オーディオ側のミュートを操作
+                    videoEl.muted = true;
+                    activeAudioElement.muted = isMute;
+                } else {
+                    videoEl.muted = isMute;
+                }
+            }
+            if (activeAudioElement) {
+                activeAudioElement.loop = isLoop;
+            }
+        }
+
+        function applyPlaybackOptionsImmediate() {
+            setTimeout(() => {
+                updatePlaybackOptions();
+            }, 100);
         }
 
         checkSubStatus();
