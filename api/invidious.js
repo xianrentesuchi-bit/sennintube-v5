@@ -13,7 +13,7 @@ const INSTANCE = [
 ];
 
 async function fetchInvidious(endpoint) {
-    for (let url of INSTANCE) {
+    const promises = INSTANCE.map(async (url) => {
         try {
             // URLの末尾にスラッシュがある場合を考慮し、適切に結合
             const baseUrl = url.endsWith('/') ? url.slice(0, -1) : url;
@@ -24,12 +24,17 @@ async function fetchInvidious(endpoint) {
                 return res.data;
             }
             // 配列でない場合は次のインスタンスへ
-            continue;
+            throw new Error('Not an array');
         } catch (e) {
-            continue;
+            throw e;
         }
+    });
+
+    try {
+        return await Promise.any(promises);
+    } catch (e) {
+        return null;
     }
-    return null;
 }
 
 async function getTrending() {
@@ -42,18 +47,24 @@ async function searchInvidious(query) {
 
 // 全ストリーム・画質フォーマット情報を取得する関数を追加
 async function getVideoInfo(videoId) {
-    for (let url of INSTANCE) {
+    const promises = INSTANCE.map(async (url) => {
         try {
             const baseUrl = url.endsWith('/') ? url.slice(0, -1) : url;
             const res = await axios.get(`${baseUrl}/videos/${videoId}`, { timeout: 5000 });
             if (res.data) {
                 return res.data;
             }
+            throw new Error('No data');
         } catch (e) {
-            continue;
+            throw e;
         }
+    });
+
+    try {
+        return await Promise.any(promises);
+    } catch (e) {
+        return null;
     }
-    return null;
 }
 
 module.exports = { getTrending, searchInvidious, getVideoInfo, INSTANCE };
