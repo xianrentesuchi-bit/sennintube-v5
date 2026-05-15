@@ -68,11 +68,11 @@
         </div>
     </div>
 
-    <!-- ヘッダー：アカウント部分を削除し、検索バーのサイズを最適化 -->
-    <nav class="p-4 border-b border-gray-800 sticky top-0 bg-[#0f0f0f] z-50 flex items-center justify-between gap-4">
+    <!-- ヘッダー：アカウント部分を削除し、検索バーのサイズを最適化、高さを細く調整 -->
+    <nav class="py-2 px-4 border-b border-gray-800 sticky top-0 bg-[#0f0f0f] z-50 flex items-center justify-between gap-4">
         <a href="/" class="text-xl font-bold flex-shrink-0">仙人Tube</a>
         
-        <form action="/search" method="GET" class="flex-1 max-w-2xl flex items-center h-10">
+        <form action="/search" method="GET" class="flex-1 max-w-2xl flex items-center h-9">
             <div class="flex flex-1 items-center bg-[#121212] border border-gray-700 rounded-l-full px-4 ml-4 h-full search-focus">
                 <span class="material-symbols-outlined text-gray-400 mr-2 text-xl">search</span>
                 <input type="text" name="q" placeholder="検索" class="bg-transparent w-full focus:outline-none text-sm h-full">
@@ -82,7 +82,12 @@
             </button>
         </form>
 
-        <div class="flex-shrink-0 w-8 md:w-20"></div> <!-- 左右のバランス用マージン -->
+        <!-- ヘッダー右側にコントロール（設定）アイコンボタンを追加 -->
+        <div class="flex-shrink-0 flex items-center">
+            <button onclick="toggleControlTab()" class="p-2 hover:bg-[#272727] rounded-full transition flex items-center justify-center" title="コントロール">
+                <span class="material-symbols-outlined text-2xl text-white">settings</span>
+            </button>
+        </div>
     </nav>
 
     <main class="flex flex-col md:flex-row p-6 gap-6">
@@ -162,11 +167,6 @@
             </div>
         </div>
         <div class="w-full md:w-80 lg:w-96 flex-shrink-0">
-            <!-- コントロールボタンを追加 -->
-            <button onclick="toggleControlTab()" class="w-full bg-[#808080] text-white py-3 rounded-xl font-bold mb-4 hover:bg-gray-500 transition flex items-center justify-center gap-2">
-                <span class="material-symbols-outlined">settings</span>
-                コントロール
-            </button>
             <h3 class="font-bold mb-4">関連動画</h3>
             <% if (typeof related !== 'undefined' && related.length > 0) { %>
                 <% related.forEach(rv => { %>
@@ -219,7 +219,7 @@
             <div id="subTab-media" class="space-y-3">
                 <div class="flex items-center justify-between">
                     <div>
-                        <span class="text-xs font-bold block">高画質再生 (1080p/720p webm)</span>
+                        <span class="text-xs font-bold block">高画質再生 (1080p等)</span>
                         <span class="text-[10px] text-gray-500 block">※ONの場合、映像と音声を同期再生します</span>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -388,15 +388,15 @@
                 container.innerHTML = `<div class="w-full h-full flex items-center justify-center text-gray-500 px-4 text-center">再生エラーが発生しました。<br>設定から再生方法を変更してください。</div>`;
             }
 
-            // サーバーから全ストリーム情報を安全にロード
-            loadAllStreamDataFromServer();
+            // ストリーム情報をサーバー経由でロード
+            loadAllStreamData();
         }
 
         // ダウンロードモーダルの制御
         function openDownloadModal() {
             document.getElementById('downloadModal').classList.remove('hidden');
             if (!globalAllStreams) {
-                loadAllStreamDataFromServer();
+                loadAllStreamData();
             }
         }
 
@@ -433,11 +433,11 @@
             });
         }
 
-        // サーバー側のカスタム内部エンドポイントからストリーム構造を安全に取得
-        async function loadAllStreamDataFromServer() {
+        // サーバー側のAPIから全画質、全ストリーム情報をロードする
+        async function loadAllStreamData() {
             try {
-                const res = await fetch(`/api/video-info?v=${videoId}`);
-                if (!res.ok) throw new Error('サーバーからのデータ取得に失敗しました');
+                const res = await fetch(`/api/youtube/dl?v=${videoId}`);
+                if (!res.ok) throw new Error('Failed to load');
                 const data = await res.json();
                 if (data && (data.formatStreams || data.adaptiveFormats)) {
                     globalAllStreams = data;
@@ -530,10 +530,10 @@
             return row;
         }
 
-        // 高画質ON/OFFトグル切り替え時の処理（webm優先、1080p -> 720p 順の厳密な判定）
+        // 高画質ON/OFFトグル切り替え時の処理（1080p -> 720p の順かつ webm コンテナを最優先探索）
         function toggleHighQualityStream() {
             if (!globalAllStreams) {
-                showError("ストリーム情報がまだロードされていません。サーバーからの応答を待つか再試行してください。");
+                showError("ストリーム情報がまだロードされていません。");
                 document.getElementById('ctrl-hd-toggle').checked = false;
                 return;
             }
@@ -556,47 +556,26 @@
                 // adaptiveFormats から映像ストリーム(video/)を抽出
                 const videoOnlyStreams = globalAllStreams.adaptiveFormats.filter(s => s.type && s.type.startsWith('video/'));
                 
-                // webmコンテナ、かつ1080p（または1080が含まれるqualityLabel）を最優先で検索
-                let chosenStream = videoOnlyStreams.find(s => 
-                    (s.container === 'webm' || (s.type && s.type.includes('webm'))) && 
-                    (s.size === '1080p' || s.qualityLabel === '1080p' || (s.resolution && s.resolution.includes('1080')))
-                );
+                if (videoOnlyStreams.length > 0) {
+                    // 優先順位に基づきフィルタリング (1080p webm -> 1080p他 -> 720p webm -> 720p他)
+                    let matchedStream = videoOnlyStreams.find(s => (s.resolution === '1080p' || s.qualityLabel?.includes('1080p')) && s.container === 'webm')
+                        || videoOnlyStreams.find(s => s.resolution === '1080p' || s.qualityLabel?.includes('1080p'))
+                        || videoOnlyStreams.find(s => (s.resolution === '720p' || s.qualityLabel?.includes('720p')) && s.container === 'webm')
+                        || videoOnlyStreams.find(s => s.resolution === '720p' || s.qualityLabel?.includes('720p'))
+                        || videoOnlyStreams[0]; // 見つからない場合のフォールバック
 
-                // なければ webmの720pを検索
-                if (!chosenStream) {
-                    chosenStream = videoOnlyStreams.find(s => 
-                        (s.container === 'webm' || (s.type && s.type.includes('webm'))) && 
-                        (s.size === '720p' || s.qualityLabel === '720p' || (s.resolution && s.resolution.includes('720')))
-                    );
+                    targetVideoUrl = matchedStream.url;
                 }
 
-                // それでもなければ、拡張子を問わず 1080p -> 720p の順にフォールバック
-                if (!chosenStream) {
-                    chosenStream = videoOnlyStreams.find(s => s.size === '1080p' || s.qualityLabel === '1080p' || (s.resolution && s.resolution.includes('1080')));
-                }
-                if (!chosenStream) {
-                    chosenStream = videoOnlyStreams.find(s => s.size === '720p' || s.qualityLabel === '720p' || (s.resolution && s.resolution.includes('720')));
-                }
-
-                // 最終フォールバック（配列の先頭要素）
-                if (!chosenStream && videoOnlyStreams.length > 0) {
-                    chosenStream = videoOnlyStreams[0];
-                }
-
-                if (chosenStream) {
-                    targetVideoUrl = chosenStream.url;
-                }
-
-                // 同期再生用オーディオ(audio/)ストリームの選定
+                // 同期用オーディオストリーム抽出
                 const audioOnlyStreams = globalAllStreams.adaptiveFormats.filter(s => s.type && s.type.startsWith('audio/'));
                 if (audioOnlyStreams.length > 0) {
-                    // オーディオもあれば webm/opus を優先的に選択
-                    let chosenAudio = audioOnlyStreams.find(s => s.container === 'webm' || (s.type && s.type.includes('opus')));
-                    if (!chosenAudio) chosenAudio = audioOnlyStreams[0];
-                    targetAudioUrl = chosenAudio.url;
+                    // 音声もあれば webm/opus 等を優先
+                    let matchedAudio = audioOnlyStreams.find(s => s.container === 'webm') || audioOnlyStreams[0];
+                    targetAudioUrl = matchedAudio.url;
                 }
             } else {
-                // OFFの場合は標準ストリーム（映像・音声一体型）に戻す
+                // OFFの場合は標準ストリームに戻す
                 if (globalAllStreams.formatStreams && globalAllStreams.formatStreams.length > 0) {
                     targetVideoUrl = globalAllStreams.formatStreams[0].url;
                 } else {
