@@ -208,26 +208,24 @@
         
         <!-- タブナビゲーション -->
         <div class="flex border-b border-gray-700 text-xs bg-[#181818]">
-            <button id="tabBtn-media" onclick="switchControlSubTab('media')" class="flex-1 py-2 text-center border-b-2 border-blue-500 text-blue-400 font-bold">画質/音声</button>
+            <button id="tabBtn-media" onclick="switchControlSubTab('media')" class="flex-1 py-2 text-center border-b-2 border-blue-500 text-blue-400 font-bold">画質設定</button>
             <button id="tabBtn-other" onclick="switchControlSubTab('other')" class="flex-1 py-2 text-center border-b-2 border-transparent text-gray-400 hover:text-white">その他</button>
             <button id="tabBtn-type" onclick="switchControlSubTab('type')" class="flex-1 py-2 text-center border-b-2 border-transparent text-gray-400 hover:text-white">再生形式</button>
         </div>
 
         <!-- タブコンテンツ領域 -->
         <div class="p-4 max-h-64 overflow-y-auto space-y-4">
-            <!-- 画質/音声タブ -->
+            <!-- 画質設定タブ (高画質ON/OFFトグルに更新) -->
             <div id="subTab-media" class="space-y-3">
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1 font-bold">画質選択</label>
-                    <select id="ctrl-video-select" onchange="changeCustomStream()" class="w-full bg-[#2d2d2d] border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                        <option value="">標準ストリーム</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1 font-bold">音声の種類選択</label>
-                    <select id="ctrl-audio-select" onchange="changeCustomStream()" class="w-full bg-[#2d2d2d] border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                        <option value="">デフォルト音声</option>
-                    </select>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold block">高画質再生 (1080p等)</span>
+                        <span class="text-[10px] text-gray-500 block">※ONの場合、映像と音声を同期再生します</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="ctrl-hd-toggle" onchange="toggleHighQualityStream()" class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
                 </div>
             </div>
 
@@ -277,9 +275,22 @@
         const overlay = document.getElementById('methodOverlay');
         const skeleton = document.getElementById('playerSkeleton');
 
-        // ストリームの全情報を保持する内部変数
+        // インスタンス一覧
+        const INVIDIOUS_INSTANCES = [
+            "https://iv.ggtyler.dev/api/v1",
+            "https://inv.nadeko.net/api/v1",
+            "https://invidious.f5.si/api/v1",
+            "https://invidious.ritoge.com/api/v1",
+            "https://invidious.ducks.party/api/v1",
+            "https://super8.absturztau.be/api/v1",
+            "https://invidious.darkness.services/api/v1",
+            "https://yt.omada.cafe/api/v1",
+            "https://iv.melmac.space/api/v1",
+            "https://iv.duti.dev/api/v1"
+        ];
+
         let globalAllStreams = null;
-        let activeAudioElement = null; // 別音声同期再生用
+        let activeAudioElement = null; // 音声同期受信用
 
         function showError(msg) {
             const alert = document.getElementById('errorAlert');
@@ -356,7 +367,6 @@
         }
 
         async function initPlayer(methodOverride) {
-            // 同期中の既存音声を破棄
             if (activeAudioElement) {
                 activeAudioElement.pause();
                 activeAudioElement = null;
@@ -392,7 +402,7 @@
                 container.innerHTML = `<div class="w-full h-full flex items-center justify-center text-gray-500 px-4 text-center">再生エラーが発生しました。<br>設定から再生方法を変更してください。</div>`;
             }
 
-            // 非同期でストリーム全情報（ダウンロード/画質セレクト用）をロード
+            // ストリーム情報をロード
             loadAllStreamData();
         }
 
@@ -426,7 +436,6 @@
             document.getElementById(`tabBtn-${tabName}`).classList.remove('border-transparent', 'text-gray-400');
         }
 
-        // コントロールタブ側での再生形式変更
         function selectControlMethod(method) {
             setMethod(method);
         }
@@ -438,19 +447,24 @@
             });
         }
 
-        // 全ストリーム情報をAPI経由で取得し、UIへマッピング
+        // フロントエンド側でInvidious APIから直接全画質、全ストリーム情報をロードする
         async function loadAllStreamData() {
-            try {
-                const res = await fetch(`/api/video/all-streams?v=${videoId}`);
-                if (!res.ok) return;
-                const data = await res.json();
-                globalAllStreams = data;
-                
-                renderDownloadList(data);
-                renderControlSelectors(data);
-            } catch (e) {
-                console.error("ストリーム情報の取得に失敗しました", e);
+            for (let url of INVIDIOUS_INSTANCES) {
+                try {
+                    const baseUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+                    const res = await fetch(`${baseUrl}/videos/${videoId}`);
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    if (data && (data.formatStreams || data.adaptiveFormats)) {
+                        globalAllStreams = data;
+                        renderDownloadList(data);
+                        return;
+                    }
+                } catch (e) {
+                    continue;
+                }
             }
+            document.getElementById('downloadList').innerHTML = '<p class="text-gray-400 text-sm text-center py-4">ストリーム情報の取得に失敗しました。時間をおいて再度お試しください。</p>';
         }
 
         // モーダル内に全画質全フォーマットをレンダリング
@@ -464,19 +478,17 @@
                 return;
             }
 
-            // 1. 通常ストリーム (映像+音声)
             if (data.formatStreams && data.formatStreams.length > 0) {
                 const h = document.createElement('h4');
                 h.className = "text-xs font-bold text-blue-400 mt-2 mb-1";
                 h.innerText = "標準フォーマット (映像+音声一体型)";
                 listContainer.appendChild(h);
 
-                data.formatStreams.forEach((s, idx) => {
+                data.formatStreams.forEach((s) => {
                     listContainer.appendChild(createDownloadRow(s, `標準 [${s.resolution || s.qualityLabel || '不明'}] - ${s.container || 'mp4'}`));
                 });
             }
 
-            // 2. Adaptive ストリーム (Video Only / Audio Only)
             if (data.adaptiveFormats && data.adaptiveFormats.length > 0) {
                 const videoOnly = data.adaptiveFormats.filter(s => s.type && s.type.startsWith('video/'));
                 const audioOnly = data.adaptiveFormats.filter(s => s.type && s.type.startsWith('audio/'));
@@ -487,7 +499,7 @@
                     h.innerText = "高画質フォーマット (映像のみ - Video Only)";
                     listContainer.appendChild(h);
 
-                    videoOnly.forEach((s, idx) => {
+                    videoOnly.forEach((s) => {
                         listContainer.appendChild(createDownloadRow(s, `映像 [${s.resolution || s.qualityLabel || '不明'}] - ${s.container || 'mp4'} (${s.fps || 30}fps)`));
                     });
                 }
@@ -495,11 +507,11 @@
                 if (audioOnly.length > 0) {
                     const h = document.createElement('h4');
                     h.className = "text-xs font-bold text-green-400 mt-4 mb-1";
-                    h.innerText = "音声フォーfancyカット (音声のみ - Audio Only)";
+                    h.innerText = "音声フォーマット (音声のみ - Audio Only)";
                     listContainer.appendChild(h);
 
-                    audioOnly.forEach((s, idx) => {
-                        listContainer.appendChild(createDownloadRow(s, `音声 [${s.audioBitrate || '不明'}kbps] - ${s.container || 'm4a'} (${s.audioQuality || ''})`));
+                    audioOnly.forEach((s) => {
+                        listContainer.appendChild(createDownloadRow(s, `音声 [${s.audioBitrate || '不明'}kbps] - ${s.container || 'm4a'}`));
                     });
                 }
             }
@@ -535,111 +547,66 @@
             return row;
         }
 
-        // コントロールタブのセレクトボックスオプション生成
-        function renderControlSelectors(data) {
-            const vSelect = document.getElementById('ctrl-video-select');
-            const aSelect = document.getElementById('ctrl-audio-select');
-
-            // 初期化保持
-            vSelect.innerHTML = '<option value="">標準ストリーム</option>';
-            aSelect.innerHTML = '<option value="">デフォルト音声</option>';
-
-            if (data.formatStreams) {
-                data.formatStreams.forEach((s, i) => {
-                    const opt = document.createElement('option');
-                    opt.value = `format_${i}`;
-                    opt.innerText = `標準: ${s.resolution || s.qualityLabel || '不明'} (${s.container || 'mp4'})`;
-                    vSelect.appendChild(opt);
-                });
+        // 高画質ON/OFFトグル切り替え時の処理
+        function toggleHighQualityStream() {
+            if (!globalAllStreams) {
+                showError("ストリーム情報がまだロードされていません。");
+                document.getElementById('ctrl-hd-toggle').checked = false;
+                return;
             }
 
-            if (data.adaptiveFormats) {
-                const videoOnly = data.adaptiveFormats.filter(s => s.type && s.type.startsWith('video/'));
-                const audioOnly = data.adaptiveFormats.filter(s => s.type && s.type.startsWith('audio/'));
+            const isHD = document.getElementById('ctrl-hd-toggle').checked;
 
-                videoOnly.forEach((s, i) => {
-                    const opt = document.createElement('option');
-                    opt.value = `adaptive_video_${i}`;
-                    opt.innerText = `映像のみ: ${s.resolution || s.qualityLabel || '不明'} (${s.fps}fps / ${s.container || 'mp4'})`;
-                    vSelect.appendChild(opt);
-                });
-
-                audioOnly.forEach((s, i) => {
-                    const opt = document.createElement('option');
-                    opt.value = `adaptive_audio_${i}`;
-                    opt.innerText = `音声のみ: ${s.audioBitrate || '不明'}kbps (${s.container || 'm4a'})`;
-                    aSelect.appendChild(opt);
-                });
-            }
-        }
-
-        // セレクト変更時のストリーム再読み込み & 音声同期
-        function changeCustomStream() {
-            if (!globalAllStreams) return;
-
-            const savedMethod = localStorage.getItem('sennin_play_method');
-            if (savedMethod !== 'stream') {
-                // 自動的に再生形式をストリームに切り替える
-                localStorage.setItem('sennin_play_method', 'stream');
-                syncMethodRadioButtons('stream');
-            }
+            // 再生形式をストリーム再生に強制ロック
+            localStorage.setItem('sennin_play_method', 'stream');
+            syncMethodRadioButtons('stream');
 
             if (activeAudioElement) {
                 activeAudioElement.pause();
                 activeAudioElement = null;
             }
 
-            const vVal = document.getElementById('ctrl-video-select').value;
-            const aVal = document.getElementById('ctrl-audio-select').value;
-
             let targetVideoUrl = streamUrl;
             let targetAudioUrl = null;
-            let isVideoOnly = false;
 
-            // 選択された映像ストリームのURL決定
-            if (vVal.startsWith('format_')) {
-                const idx = parseInt(vVal.split('_')[1]);
-                targetVideoUrl = globalAllStreams.formatStreams[idx].url;
-            } else if (vVal.startsWith('adaptive_video_')) {
-                const videoOnly = globalAllStreams.adaptiveFormats.filter(s => s.type && s.type.startsWith('video/'));
-                const idx = parseInt(vVal.split('_')[2]);
-                targetVideoUrl = videoOnly[idx].url;
-                isVideoOnly = true;
-            }
-
-            // 選択された音声ストリームのURL決定
-            if (aVal.startsWith('adaptive_audio_')) {
-                const audioOnly = globalAllStreams.adaptiveFormats.filter(s => s.type && s.type.startsWith('audio/'));
-                const idx = parseInt(aVal.split('_')[2]);
-                targetAudioUrl = audioOnly[idx].url;
-            } else if (isVideoOnly) {
-                // videoOnlyだが、音声選択がない場合は、一番上の高品質な音声を自動アタッチ
-                const audioOnly = globalAllStreams.adaptiveFormats.filter(s => s.type && s.type.startsWith('audio/'));
-                if (audioOnly.length > 0) {
-                    targetAudioUrl = audioOnly[0].url;
+            if (isHD) {
+                // adaptiveFormats から最高画質の映像(video/)ストリームを抽出
+                const videoOnlyStreams = globalAllStreams.adaptiveFormats.filter(s => s.type && s.type.startsWith('video/'));
+                if (videoOnlyStreams.length > 0) {
+                    // 解像度やfpsなどから適した最高画質を選択
+                    targetVideoUrl = videoOnlyStreams[0].url;
+                }
+                // 同期再生に必要なオーディオ(audio/)ストリームも抽出して設定
+                const audioOnlyStreams = globalAllStreams.adaptiveFormats.filter(s => s.type && s.type.startsWith('audio/'));
+                if (audioOnlyStreams.length > 0) {
+                    targetAudioUrl = audioOnlyStreams[0].url;
+                }
+            } else {
+                // OFFの場合は標準ストリーム（映像・音声一体型）に戻す
+                if (globalAllStreams.formatStreams && globalAllStreams.formatStreams.length > 0) {
+                    targetVideoUrl = globalAllStreams.formatStreams[0].url;
+                } else {
+                    targetVideoUrl = streamUrl;
                 }
             }
 
-            // プレイヤーをストリームで再構築
             container.innerHTML = `<video id="mainVideoPlayer" src="${targetVideoUrl}" controls autoplay class="w-full h-full" onloadeddata="document.getElementById('playerSkeleton').style.display='none'"></video>`;
             const videoEl = document.getElementById('mainVideoPlayer');
 
-            // 音声の同期再生制御
             if (targetAudioUrl) {
                 activeAudioElement = new Audio(targetAudioUrl);
                 const audioEl = activeAudioElement;
 
-                // ビデオ側の状態変化をオーディオへ同期
+                // 各種プレイヤーイベントの同期
                 videoEl.addEventListener('play', () => audioEl.play());
                 videoEl.addEventListener('pause', () => audioEl.pause());
                 videoEl.addEventListener('seeking', () => { audioEl.currentTime = videoEl.currentTime; });
                 videoEl.addEventListener('seeked', () => { audioEl.currentTime = videoEl.currentTime; });
                 videoEl.addEventListener('ratechange', () => { audioEl.playbackRate = videoEl.playbackRate; });
 
-                // videoOnlyの場合はビデオ自体の音量を0にし、オーディオエレメント側の音量で鳴らす
+                // 映像側をミュート（音声側から鳴らす）
                 videoEl.muted = true;
-                
-                // 初回再生タイミング同期
+
                 audioEl.currentTime = videoEl.currentTime;
                 if (!videoEl.paused) {
                     audioEl.play().catch(() => {});
@@ -658,7 +625,6 @@
             if (videoEl) {
                 videoEl.loop = isLoop;
                 if (activeAudioElement) {
-                    // 別音声同期時：ビデオは常に無音のまま、オーディオ側のミュートを操作
                     videoEl.muted = true;
                     activeAudioElement.muted = isMute;
                 } else {
