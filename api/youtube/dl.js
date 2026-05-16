@@ -1,4 +1,4 @@
-const invidious = require('../invidious');
+const { getVideoInfo } = require('../invidious');
 
 async function getDownloadInfo(req, res) {
     const videoId = req.query.v;
