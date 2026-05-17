@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
+const { TextDecoder } = require('util');
 
 router.get('/', async (req, res) => {
     const query = req.query.q;
@@ -9,8 +10,8 @@ router.get('/', async (req, res) => {
             responseType: 'arraybuffer' // バイナリデータとして受け取る
         });
         
-        // UTF-8文字列にデコードする
-        const decoder = new TextDecoder('utf-8');
+        // Shift_JIS (windows-31j) 文字列としてデコードする
+        const decoder = new TextDecoder('windows-31j');
         const decodedData = JSON.parse(decoder.decode(response.data));
         
         // レスポンスヘッダーに明示的に UTF-8 を指定
