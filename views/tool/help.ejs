@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ヘルプ - 仙人Tube</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #1a202c; 
+            color: #f7fafc; 
+            font-family: 'Noto Sans JP', sans-serif;
+            margin: 0;
+        }
+        header {
+            background-color: #171923; 
+            border-bottom: 1px solid #2d3748;
+        }
+        .help-card {
+            background-color: #2d3748;
+            border: 1px solid #4a5568;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .help-card:hover {
+            border-color: #63b3ed;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <header class="w-full p-6 flex justify-between items-center px-8">
+        <a href="/" class="text-xl font-bold text-white flex items-center space-x-2">
+            <span class="material-symbols-outlined text-blue-400">auto_stories</span>
+            <span>仙人Tube ヘルプ</span>
+        </a>
+        <div class="flex items-center space-x-6">
+            <a href="/" class="text-gray-300 hover:text-white transition-colors text-sm font-medium flex items-center">
+                <span class="material-symbols-outlined mr-1 text-base">home</span>トップへ戻る
+            </a>
+            <a href="/toolmenu" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">tools</a>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-12">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-white mb-4 tracking-tight">よくある質問と使い方</h1>
+            <p class="text-gray-400">仙人Tubeを快適にご利用いただくためのガイドです。</p>
+        </div>
+
+        <div class="space-y-8">
+            <section>
+                <h2 class="text-xl font-bold text-blue-400 mb-4 flex items-center">
+                    <span class="material-symbols-outlined mr-2">menu_book</span>基本的な使い方
+                </h2>
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div class="help-card p-6 rounded-xl shadow-lg">
+                        <h3 class="text-lg font-bold text-white mb-2 flex items-center">
+                            <span class="material-symbols-outlined mr-2 text-gray-400">search</span>動画の検索
+                        </h3>
+                        <p class="text-gray-300 text-sm leading-relaxed">
+                            トップページの検索窓にキーワードを入力して検索してください。入力中に自動でサジェスト（候補）が表示されます。
+                        </p>
+                    </div>
+                    <div class="help-card p-6 rounded-xl shadow-lg">
+                        <h3 class="text-lg font-bold text-white mb-2 flex items-center">
+                            <span class="material-symbols-outlined mr-2 text-gray-400">settings</span>設定の変更
+                        </h3>
+                        <p class="text-gray-300 text-sm leading-relaxed">
+                            右上の「設定」ボタンから、動画の再生方法や視聴履歴の保存有無をいつでも切り替えることができます。
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-bold text-blue-400 mb-4 flex items-center">
+                    <span class="material-symbols-outlined mr-2">help</span>再生方法（モード）について
+                </h2>
+                <div class="space-y-4">
+                    <div class="help-card p-6 rounded-xl shadow-lg">
+                        <div class="flex items-start">
+                            <div class="bg-blue-500/10 text-blue-400 p-2 rounded-lg mr-4 mt-0.5">
+                                <span class="material-symbols-outlined">cookie_off</span>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-white mb-1">nocookie (推奨)</h3>
+                                <p class="text-gray-300 text-sm leading-relaxed">
+                                    プライバシーに配慮した埋め込みプレイヤーで再生します。不要なクッキーの保存をトラッキングを無効化して動画を視聴できます。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="help-card p-6 rounded-xl shadow-lg">
+                        <div class="flex items-start">
+                            <div class="bg-purple-500/10 text-purple-400 p-2 rounded-lg mr-4 mt-0.5">
+                                <span class="material-symbols-outlined">school</span>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-white mb-1">education</h3>
+                                <p class="text-gray-300 text-sm leading-relaxed">
+                                    教育コンテンツ向けの制限付き環境をベースにした再生方式です。広告や関連動画の誘惑を最小限に抑えます。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="help-card p-6 rounded-xl shadow-lg">
+                        <div class="flex items-start">
+                            <div class="bg-green-500/10 text-green-400 p-2 rounded-lg mr-4 mt-0.5">
+                                <span class="material-symbols-outlined">stream</span>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-white mb-1">stream</h3>
+                                <p class="text-gray-300 text-sm leading-relaxed">
+                                    サーバー側でデータを最適化してストリーミング再生を行う方式です。環境やデバイスによって再生が不安定な場合にお試しください。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-bold text-blue-400 mb-4 flex items-center">
+                    <span class="material-symbols-outlined mr-2">lock</span>プライバシーと履歴
+                </h2>
+                <div class="help-card p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-bold text-white mb-2">視聴履歴の保存設定について</h3>
+                    <p class="text-gray-300 text-sm leading-relaxed mb-3">
+                        設定パネルの「視聴履歴を保存する」のチェックを有効にすると、お使いのブラウザ内（LocalStorage）にのみ視聴した動画のデータが保存されます。
+                    </p>
+                    <p class="text-gray-400 text-xs leading-relaxed">
+                        ※サーバー側に履歴が送信されたり、外部に公開されることは一切ありません。完全にオフにしたい場合はいつでもトグルスイッチで無効化できます。
+                    </p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="w-full py-6 border-t border-[#2d3748] text-center text-gray-500 text-xs bg-[#171923]">
+        <p>( =＾ω＾)</p>
+    </footer>
+</body>
+</html>
