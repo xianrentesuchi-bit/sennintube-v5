@@ -5,23 +5,19 @@
     <title>仙人Tube</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-    <!-- フォント統一のためのNoto Sans JP -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* わかめTubeを参考にした色使いの設定 */
         body { 
-            background-color: #1a202c; /* bg-gray-900相当 */
+            background-color: #1a202c; 
             color: #f7fafc; 
             font-family: 'Noto Sans JP', sans-serif;
             margin: 0;
         }
         
-        /* ヘッダー・ヒーローセクションの色使い */
         .hero-gradient {
-            background-color: #2d3748; /* わかめTubeのhero-section色 */
+            background-color: #2d3748; 
         }
 
-        /* サジェストボックスのUI強化 */
         .suggest-box { 
             display: none; 
             position: absolute; 
@@ -38,7 +34,6 @@
             background-color: #4a5568;
         }
 
-        /* 入力ボックスの透過感とフォーカス */
         .search-input-wrapper {
             background-color: rgba(255, 255, 255, 0.1);
             border: 1px solid #4a5568;
@@ -46,17 +41,15 @@
         }
         .search-input-wrapper:focus-within {
             background-color: rgba(255, 255, 255, 0.2);
-            border-color: #63b3ed; /* blue-400相当 */
+            border-color: #63b3ed; 
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.3);
         }
-        /* 追加：濃い色のヘッダー用スタイル */
         header {
-            background-color: #171923; /* より濃いネイビーグレー */
+            background-color: #171923; 
             border-bottom: 1px solid #2d3748;
         }
 
-        /* 設定パネルのスタイル */
-        #settingsPanel {
+        .settingsPanel {
             transition: transform 0.3s ease-in-out;
             transform: translateX(100%);
         }
@@ -66,10 +59,9 @@
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
-    <!-- 追加：ヘッダーセクション（p-6に増やして高さを調整） -->
     <header class="w-full p-6 flex justify-end items-center space-x-6">
-        <a href="/tools" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">tools</a>
-        <a href="/blog/b/wkthelp" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">ヘルプ</a>
+        <a href="/toolmenu" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">tools</a>
+        <a href="/help" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">ヘルプ</a>
         <button id="openSettings" class="text-gray-300 hover:text-white transition-colors text-sm font-medium flex items-center">
             <span class="material-symbols-outlined mr-1 text-base">settings</span>設定
         </button>
@@ -77,7 +69,6 @@
 
     <div class="flex-grow flex flex-col items-center justify-center">
         <div class="w-full max-w-2xl px-4">
-            <!-- タイトルの色使いを白へ -->
             <h1 class="text-5xl font-bold text-center mb-8 tracking-tighter text-white">仙人Tube</h1>
             
             <div class="relative">
@@ -89,12 +80,10 @@
                 <div id="suggestBox" class="suggest-box overflow-hidden"></div>
             </div>
             
-            <!-- わかめTube風のサブテキスト -->
             <p class="text-center mt-6 text-gray-400 text-sm">好きな動画を検索してみましょう！</p>
         </div>
     </div>
 
-    <!-- 設定パネル本体 -->
     <div id="settingsPanel" class="fixed top-0 right-0 h-full w-80 bg-[#171923] border-l border-[#2d3748] z-[200] p-6 shadow-2xl">
         <div class="flex justify-between items-center mb-8">
             <h2 class="text-xl font-bold text-white flex items-center">
@@ -106,7 +95,6 @@
         </div>
 
         <div class="space-y-6">
-            <!-- 再生方法の選択 -->
             <div>
                 <label class="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">再生方法の選択</label>
                 <select id="playMethod" class="w-full bg-[#2d3748] border border-[#4a5568] text-white rounded-lg p-2 outline-none focus:border-blue-400 transition-colors">
@@ -116,7 +104,6 @@
                 </select>
             </div>
 
-            <!-- 履歴の保存設定 -->
             <div>
                 <label class="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">履歴の保存設定</label>
                 <div class="flex items-center justify-between bg-[#2d3748] p-3 rounded-lg border border-[#4a5568]">
@@ -134,24 +121,20 @@
         </div>
     </div>
 
-    <!-- 背景オーバーレイ -->
     <div id="overlay" class="fixed inset-0 bg-black/50 hidden z-[150]"></div>
 
     <script>
         const input = document.getElementById('searchInput');
         const box = document.getElementById('suggestBox');
         
-        // 設定パネル制御
         const settingsPanel = document.getElementById('settingsPanel');
         const overlay = document.getElementById('overlay');
         const openBtn = document.getElementById('openSettings');
         const closeBtn = document.getElementById('closeSettings');
         
-        // 設定要素
         const playMethodSelect = document.getElementById('playMethod');
         const saveHistoryCheck = document.getElementById('saveHistory');
 
-        // 設定の読み込みと保存
         const loadSettings = () => {
             const method = localStorage.getItem('sennin_play_method') || 'nocookie';
             const history = localStorage.getItem('sennin_save_history') === 'true';
@@ -177,24 +160,19 @@
         closeBtn.onclick = closePanel;
         overlay.onclick = closePanel;
 
-        // イベントリスナー
         playMethodSelect.onchange = saveSettings;
         saveHistoryCheck.onchange = saveSettings;
 
-        // 初期ロード
         loadSettings();
 
-        // 検索サジェスト
         input.addEventListener('input', async () => {
             if(!input.value) { box.style.display = 'none'; return; }
             const res = await fetch(`/api/suggests?q=${input.value}`);
             const data = await res.json();
-            // ホバー時の色使いを「わかめTube」のカードホバー色に合わせる
             box.innerHTML = data.map(s => `<div class="p-3 suggest-item cursor-pointer text-gray-200 transition-colors" onclick="location.href='/search?q=${s}'">${s}</div>`).join('');
             box.style.display = 'block';
         });
 
-        // 枠外クリックでサジェストを閉じる
         document.addEventListener('click', (e) => {
             if (!input.contains(e.target) && !box.contains(e.target)) {
                 box.style.display = 'none';
