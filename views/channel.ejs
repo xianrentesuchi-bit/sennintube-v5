@@ -40,7 +40,7 @@
             <% if (channelInfo.videos && channelInfo.videos.length > 0) { %>
                 <% channelInfo.videos.forEach(v => { %>
                     <a href="/watch?v=<%= v.videoId %>" class="group">
-                        <img src="<%= v.videoThumbnails ? v.videoThumbnails[0].url : 'https://i.ytimg.com/vi/' + v.videoId + '/mqdefault.jpg' %>" class="w-full aspect-video object-cover rounded-xl bg-gray-800">
+                        <img src="<%= (v.videoThumbnails && v.videoThumbnails[0] && v.videoThumbnails[0].url) ? v.videoThumbnails[0].url : 'https://i.ytimg.com/vi/' + v.videoId + '/mqdefault.jpg' %>" class="w-full aspect-video object-cover rounded-xl bg-gray-800">
                         <div class="mt-2">
                             <p class="font-bold line-clamp-2 text-sm group-hover:text-blue-400 transition"><%= v.title %></p>
                             <p class="text-[10px] text-gray-400 mt-1"><%= v.viewCountText %> • <%= v.publishedText %></p>
