@@ -5,5 +5,8 @@ router.get('/help', (req, res) => {
     res.render('tool/help');
 });
 
-module.exports = router;
+router.get('/login', (req, res) => {
+    res.render('taisaku/login');
+});
 
+module.exports = router;
