@@ -61,10 +61,10 @@
                             <img src="<%= channelInfo.thumbnail %>" class="w-10 h-10 rounded-full">
                             <div>
                                 <p class="font-bold text-sm"><%= channelInfo.name %></p>
-                                <p class="text-[10px] text-gray-400">投稿済み</p>
+                                <p class="text-[10px] text-gray-400"><%= post.published_text || '投稿済み' %></p>
                             </div>
                         </div>
-                        <p class="text-sm whitespace-pre-wrap"><%= post.content %></p>
+                        <p class="text-sm whitespace-pre-wrap"><%- post.content %></p>
                     </div>
                 <% }) %>
             <% } else { %>
