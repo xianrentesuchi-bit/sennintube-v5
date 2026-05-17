@@ -71,6 +71,22 @@ async function getVideoInfo(videoId) {
                 (Array.isArray(res.data.formatStreams) && res.data.formatStreams.length > 0) || 
                 (Array.isArray(res.data.adaptiveFormats) && res.data.adaptiveFormats.length > 0)
             )) {
+                // 同期再生用の音声データの並び替え処理（日本語 'ja' を最優先、なければその他）
+                if (Array.isArray(res.data.adaptiveFormats)) {
+                    res.data.adaptiveFormats.sort((a, b) => {
+                        const aIsAudio = a.type && a.type.startsWith('audio/');
+                        const bIsAudio = b.type && b.type.startsWith('audio/');
+                        
+                        // 両方とも音声データの場合のみ言語コードを比較
+                        if (aIsAudio && bIsAudio) {
+                            const aIsJa = a.language === 'ja' || (a.audioTrack && a.audioTrack.language === 'ja');
+                            const bIsJa = b.language === 'ja' || (b.audioTrack && b.audioTrack.language === 'ja');
+                            if (aIsJa && !bIsJa) return -1;
+                            if (!aIsJa && bIsJa) return 1;
+                        }
+                        return 0;
+                    });
+                }
                 return res.data;
             }
             throw new Error('No valid streams in this instance');
