@@ -24,11 +24,12 @@ async function getChannelInfo(channelId) {
                 httpsAgent
             });
 
-            if (res.data) {
+            // 厳密なバリデーション：データが存在し、かつチャンネル名(author)が正常に取得できている場合のみ採用
+            if (res.data && res.data.author && res.data.author !== "Unknown Channel") {
                 const c = res.data;
                 const rawVideos = c.latestVideos || c.videos || [];
                 return {
-                    name: c.author || "Unknown Channel",
+                    name: c.author,
                     thumbnail: (c.authorThumbnails && c.authorThumbnails.length > 0) ? c.authorThumbnails[c.authorThumbnails.length - 1].url : "",
                     subscribers: c.subCountText || "0",
                     banner: (c.authorBanners && c.authorBanners.length > 0) ? c.authorBanners[0].url : "",
@@ -42,7 +43,7 @@ async function getChannelInfo(channelId) {
                     comments: c.comments || []
                 };
             }
-            throw new Error('No data received');
+            throw new Error('Incomplete channel data from this instance');
         } catch (e) {
             throw e;
         }
