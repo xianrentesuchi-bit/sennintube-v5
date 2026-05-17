@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ゲーム一覧</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Roboto", sans-serif; background: #0f0f0f; color: #fff; font-size: 16px; padding: 40px 20px; }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+    
+    .header { margin-bottom: 30px; border-bottom: 1px solid #272727; padding-bottom: 15px; }
+    .title { font-size: 24px; font-weight: 600; color: #fff; }
+    
+    .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+    
+    .game-card {
+      display: block; text-decoration: none; color: inherit;
+      background: #141414; border-radius: 12px; overflow: hidden;
+      border: 1px solid #222; transition: border-color 0.15s, transform 0.15s;
+    }
+    .game-card:hover { border-color: #444; transform: translateY(-4px); }
+    .game-card:hover .game-title { color: #3ea6ff; }
+    
+    .game-thumb { width: 100%; aspect-ratio: 16/9; overflow: hidden; background: #1a1a1a; position: relative; }
+    .game-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    
+    /* サムネイル画像がない場合のダミーアイコン */
+    .game-thumb::after {
+      content: "🎮"; position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%); font-size: 40px; opacity: 0.3;
+    }
+    .game-thumb img + ::after { display: none; } /* 画像があればアイコンは隠す */
+
+    .game-body { padding: 16px; }
+    .game-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; line-height: 1.4; transition: color 0.15s; }
+    .game-desc { font-size: 13px; color: #aaa; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    @media (max-width: 600px) {
+      body { padding: 20px 12px; }
+      .game-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+      .game-body { padding: 10px; }
+      .game-title { font-size: 14px; margin-bottom: 4px; }
+      .game-desc { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header class="header">
+    <h1 class="title">ゲーム一覧</h1>
+  </header>
+
+  <div class="game-grid" id="gameGrid"></div>
+</div>
+
+<script>
+  // ゲームのデータ配列
+  // 新しいゲームを追加したい場合は、ここのオブジェクトを増やしていくだけで自動反映されます
+  const GAMES = [
+    {
+      title: 'stickman.io',
+      desc: '爽快なアクションゲーム。タイミングよくワイヤーを引っ掛けてゴールを目指そう。',
+      thumbnail: '/api/image/gm/git?path=stickman.jpeg',
+      url: '/gm/stickman/' // さきほど作成したExpressのルーターパスを指定
+    },
+    {
+      title: '青鬼 2016',
+      desc: '青鬼。館から脱出を目指す有名なホラーゲーム。',
+      thumbnail: '/api/image/gm/git?path=aooni.jpeg',
+      url: '/gm/aooni/'
+    },
+    {
+      title: 'ネタバレが激しすぎるRPG',
+      desc: '1時期話題だった例のゲーム。最初からネタバレ全開で進みます。',
+      thumbnail: '/api/image/gm/git?path=netabare.jpeg',
+      url: '/gm/netabare/'
+    },
+    {
+      title: 'paper.io',
+      desc: '自分の陣地をどんどん広げていくオンライン対戦ゲーム。',
+      thumbnail: '/api/image/gm/git?path=paperio.jpeg',
+      url: '/gm/paperio/'
+    }
+  ];
+
+  function renderGames() {
+    const grid = document.getElementById('gameGrid');
+    
+    grid.innerHTML = GAMES.map(game => `
+      <a href="${game.url || '#'}" class="game-card">
+        <div class="game-thumb">
+          <img loading="lazy" src="${game.thumbnail}" alt="${game.title}" onerror="this.style.display='none'">
+        </div>
+        <div class="game-body">
+          <div class="game-title">${game.title}</div>
+          <div class="game-desc">${game.desc}</div>
+        </div>
+      </a>
+    `).join('');
+  }
+
+  // ページ読み込み時にゲーム一覧を出力
+  document.addEventListener('DOMContentLoaded', renderGames);
+</script>
+
+</body>
+</html>
