@@ -32,22 +32,31 @@
             100% { background-position: -200% 0; }
         }
 
-        /* エラーアラートのアニメーション */
-        #errorAlert {
-            transform: translateX(120%);
-            transition: transform 0.3s ease-out;
+        /* 通知コンテナの位置微調整（ヘッダー高さを考慮して重ならないように配置） */
+        #notificationContainer {
+            top: 4.5rem;
+            right: 1rem;
         }
-        #errorAlert.show {
-            transform: translateX(0);
+
+        /* 通知カードの表示・非表示アニメーション (イージングとスケールを強化しバウンス感を付与) */
+        .notification-card {
+            transform: translateX(130%) scale(0.9);
+            opacity: 0;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease, margin-bottom 0.3s ease;
+        }
+        .notification-card.show {
+            transform: translateX(0) scale(1);
+            opacity: 1;
+        }
+        .notification-card.hide {
+            transform: translateX(130%) scale(0.9);
+            opacity: 0;
         }
     </style>
 </head>
 <body class="bg-[#0f0f0f] text-white">
-    <!-- エラーアラート -->
-    <div id="errorAlert" class="fixed top-20 right-4 z-[200] bg-red-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3">
-        <span class="material-symbols-outlined">error</span>
-        <span id="errorMsg">エラーが発生しました</span>
-    </div>
+    <!-- 通知カード配置用の固定コンテナ（ヘッダー下から上積みされるのを防止し縦並び制御） -->
+    <div id="notificationContainer" class="fixed z-[200] flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
 
     <!-- 再生方法選択オーバーレイ -->
     <div id="methodOverlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 hidden">
@@ -278,14 +287,66 @@
         let globalAllStreams = null;
         let activeAudioElement = null; // 音声同期受信用
 
+        // 汎用通知カード生成システム（重複回避、ヘッダー保護、カスタムアニメーション、カラー設定対応）
+        function createToastNotification(message, type = 'other') {
+            const container = document.getElementById('notificationContainer');
+            if (!container) return;
+
+            // 黒色ベースのスタイリッシュなカードを生成
+            const card = document.createElement('div');
+            card.className = "notification-card pointer-events-auto bg-[#1a1a1a] border rounded-xl shadow-2xl p-4 flex items-start gap-3 w-full border-gray-800";
+            
+            // タイプ別のカラー（ボーダーとアイコン）の割り当て
+            let icon = 'info';
+            let colorClass = 'text-blue-500';
+            if (type === 'error') {
+                icon = 'error';
+                colorClass = 'text-red-500';
+                card.classList.replace('border-gray-800', 'border-red-600/50');
+            } else if (type === 'hint') {
+                icon = 'lightbulb';
+                colorClass = 'text-gray-400';
+                card.classList.replace('border-gray-800', 'border-gray-600/50');
+            } else {
+                card.classList.replace('border-gray-800', 'border-blue-600/50');
+            }
+
+            card.innerHTML = `
+                <span class="material-symbols-outlined ${colorClass} flex-shrink-0 mt-0.5">${icon}</span>
+                <div class="flex-1 text-sm font-medium text-gray-200 break-all">${message}</div>
+                <button class="material-symbols-outlined text-gray-500 hover:text-white flex-shrink-0 text-lg transition close-btn">close</button>
+            `;
+
+            container.appendChild(card);
+
+            // 表示トリガー（リフロー後に付与して滑らかにスライドイン）
+            requestAnimationFrame(() => {
+                card.classList.add('show');
+            });
+
+            // 消去関数（アニメーション終了を待ってからDOM除去）
+            const removeCard = () => {
+                if (card.classList.contains('hide')) return;
+                card.classList.remove('show');
+                card.classList.add('hide');
+                card.addEventListener('transitionend', () => {
+                    card.remove();
+                });
+            };
+
+            // 自動非表示タイマー（エラーやヒントを長く見せるため5秒）
+            const autoHideTimer = setTimeout(removeCard, 5000);
+
+            // 手動で閉じるボタン
+            card.querySelector('.close-btn').addEventListener('click', () => {
+                clearTimeout(autoHideTimer);
+                removeCard();
+            });
+        }
+
+        // 既存のエラーアラート互換関数を通知カードシステムへ統合
         function showError(msg) {
-            const alert = document.getElementById('errorAlert');
-            const msgEl = document.getElementById('errorMsg');
-            msgEl.innerText = msg;
-            alert.classList.add('show');
-            setTimeout(() => {
-                alert.classList.remove('show');
-            }, 5000);
+            createToastNotification(msg, 'error');
         }
 
         function toggleDescription() {
@@ -338,7 +399,7 @@
                 }).catch(console.error);
             } else {
                 navigator.clipboard.writeText(window.location.href);
-                alert('URLをクリップボードにコピーしました！');
+                createToastNotification('URLをクリップボードにコピーしました！', 'other');
             }
         }
 
@@ -637,6 +698,33 @@
 
         checkSubStatus();
         initPlayer();
+
+        // 起動時に右上から黒いカードでヒント（灰色タイプ）を表示
+        window.addEventListener('DOMContentLoaded', () => {
+            // 豊富なヒント情報の配列を定義
+            const hintPool = [
+                'コントロールから設定できるよ',
+                '高画質再生に切り替えると、1080p等での同期再生が可能になります。',
+                '動画が重い、または再生できない場合は、再生形式を「標準」や「edu」に変えてみてください。',
+                'ダウンロードボタンから、映像のみ・音声のみなど全フォーマットを確認・保存できます。',
+                'ループ再生やミュート設定は、右下の「動画設定タブ」＞「その他」から制御できます。',
+                '設定した再生方法はブラウザに2週間キャッシュされ、次回以降も自動適用されます。'
+            ];
+
+            let currentHintIndex = 0;
+
+            // 最初の初回起動時ヒント表示
+            setTimeout(() => {
+                createToastNotification(hintPool[currentHintIndex], 'hint');
+                currentHintIndex++;
+            }, 800);
+
+            // 1分(60000ms)ごとに関連する豊富なヒント内容を順番に巡回自動表示するタイマー処理
+            setInterval(() => {
+                createToastNotification(hintPool[currentHintIndex], 'hint');
+                currentHintIndex = (currentHintIndex + 1) % hintPool.length;
+            }, 60000);
+        });
     </script>
 </body>
 </html>
