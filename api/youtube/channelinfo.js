@@ -1,14 +1,30 @@
 const { getYouTube } = require('../youtube');
 const axios = require('axios');
 const { INSTANCE } = require('../invidious');
+const http = require('http');
+const https = require('https');
+
+// コネクションを使い回すためのエージェント設定（DNS解決・TCPハンドシェイクを高速化）
+const httpAgent = new http.Agent({ keepAlive: true });
+const httpsAgent = new https.Agent({ keepAlive: true });
 
 async function getChannelInfo(channelId) {
-    // Invidious API 経由での取得を試行
-    for (let url of INSTANCE) {
+    // Invidious API 経由での取得を試行 (すべてのインスタンスを同時に叩いて最速のものを採用)
+    const promises = INSTANCE.map(async (url) => {
         try {
-            const baseUrl = url.endsWith('/') ? url.slice(0, -1) : url;
-            // APIエンドポイントに /api/v1/ を明示的に追加
-            const res = await axios.get(`${baseUrl}/api/v1/channels/${channelId}`, { timeout: 4000 });
+            let baseUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+            
+            // 重複防止バグ修正: INSTANCE 側に既に '/api/v1' が含まれている場合は二重に追加しない
+            if (!baseUrl.endsWith('/api/v1')) {
+                baseUrl = `${baseUrl}/api/v1`;
+            }
+            
+            const res = await axios.get(`${baseUrl}/channels/${channelId}`, { 
+                timeout: 4000,
+                httpAgent,
+                httpsAgent
+            });
+            
             if (res.data) {
                 const c = res.data;
                 const rawVideos = c.latestVideos || c.videos || [];
@@ -27,9 +43,17 @@ async function getChannelInfo(channelId) {
                     comments: c.comments || []
                 };
             }
+            throw new Error('Invalid data');
         } catch (e) {
-            continue;
+            throw e;
         }
+    });
+
+    try {
+        const fastestResult = await Promise.any(promises);
+        if (fastestResult) return fastestResult;
+    } catch (e) {
+        // すべてのインビディアスインスタンスが失敗した場合はフォールバックへ進む
     }
 
     // フォールバック: YouTube.js (youtubei.js)
